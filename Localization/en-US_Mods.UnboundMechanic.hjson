@@ -1,0 +1,10 @@
+Configs: {
+	UnboundMechanicConfig: {
+		DisplayName: Auto Untie Mechanic Config
+
+		MechanicAlwaysAvailable: {
+			Label: Mechanic Can Always Move In
+			Tooltip: Lets the mechanic spawn before skeletron
+		}
+	}
+}

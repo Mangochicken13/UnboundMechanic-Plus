@@ -1,0 +1,3 @@
+displayName = Auto Untie Mechanic
+author = Mangochicken
+version = 1.0.1
