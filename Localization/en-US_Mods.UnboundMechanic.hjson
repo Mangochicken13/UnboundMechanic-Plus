@@ -1,10 +1,140 @@
 Configs: {
-	UnboundMechanicConfig: {
-		DisplayName: Auto Untie Mechanic Config
+	A_UnboundMechanicConfig: {
+		DisplayName: Untying NPCs Config
+
+		Headers: {
+			Presets: Presets
+			Stylist: "[c/ED72CA:Stylist]"
+			Angler: "[c/D6F5FF:Angler]"
+			Golfer: "[c/F1F2DC:Golfer]"
+			Goblin: "[c/3D74FF:Goblin]"
+			Tavernkeep: Tavernkeep
+			Mechanic: "[c/FCC095:Mechanic]"
+			Wizard: "[c/6228EB:Wizard]"
+			TaxCollector: "[c/FF6D59:Tax Collector]"
+		}
+
+		None: {
+			Label: None
+			Tooltip: Turns all the settings off
+		}
+
+		OnlyUntie: {
+			Label: Only Untie
+			Tooltip: Lets bound NPCs spawn in after their other conditions are met
+		}
+
+		BoundAlwaysAvailable: {
+			Label: Allow NPCs Early
+			Tooltip: Lets NPCs like the Mechanic, Goblin Tinkerer or Wizard spawn before their conditions are met
+		}
+
+		EnableStylist: {
+			Label: Enable Stylist
+			Tooltip: ""
+		}
+
+		EnableAngler: {
+			Label: Enable Angler
+			Tooltip: ""
+		}
+
+		EnableGolfer: {
+			Label: Enable Golfer
+			Tooltip: ""
+		}
+
+		EnableGoblin: {
+			Label: Enable Goblin
+			Tooltip: ""
+		}
+
+		GoblinAlwaysAvailable: {
+			Label: Goblin Always Available
+			Tooltip: ""
+		}
+
+		EnableTavernkeep: {
+			Label: Enable Tavernkeep
+			Tooltip: ""
+		}
+
+		TavernkeepAlwaysAvailable: {
+			Label: Tavernkeep Always Available
+			Tooltip: ""
+		}
+
+		EnableMechanic: {
+			Label: Enable Mechanic
+			Tooltip: ""
+		}
 
 		MechanicAlwaysAvailable: {
-			Label: Mechanic Can Always Move In
-			Tooltip: Lets the mechanic spawn before skeletron
+			Label: Mechanic Always Available
+			Tooltip: ""
+		}
+
+		EnableWizard: {
+			Label: Enable Wizard
+			Tooltip: ""
+		}
+
+		WizardAlwaysAvailablePreHardmode: {
+			Label: Wizard Always Available Pre Hardmode
+			Tooltip: ""
+		}
+
+		EnableTaxCollector: {
+			Label: Enable Tax Collector
+			Tooltip: ""
+		}
+
+		TaxCollectorAlwaysAvailablePreHardmode: {
+			Label: Tax Collector Always Available Pre Hardmode
+			Tooltip: ""
+		}
+	}
+
+	B_EveryOtherNPCConfig: {
+		DisplayName: Restrictionless Spawning Config
+
+		specificNPCsToAllow: {
+			Label: specific NPCs To Allow
+			Tooltip: ""
+		}
+
+		Headers.Cheats: Cheats
+
+		EveryoneCanSpawnFromStart: {
+			Label: Everyone Can Spawn From Start
+			Tooltip:
+				'''
+				Requires exiting and re-entering a world to take effect
+				Also needs "{$AllowRestrictionlessSpawning.Label}" to be true to work
+				'''
+		}
+
+		AllowRestrictionlessSpawning: {
+			Label: Allow Restrictionless Spawning
+			Tooltip: ""
+		}
+	}
+
+	SpecificNPCsToAllow: {
+		Tooltip: ""
+
+		SampleText: {
+			Label: "[c/FF0000:IMPORTANT]"
+			Tooltip:
+				'''
+				This list decides what Town NPCs are allowed to spawn in at the start of the game
+				This can break progression, it's [c/00A5DA:up to the user] to decide what not to use/do, and whether to fight bosses in range of the stronger Modded NPCs
+				'''
+		}
+
+		NPCList: {
+			Label: NPC List
+			Tooltip: ""
 		}
 	}
 }
