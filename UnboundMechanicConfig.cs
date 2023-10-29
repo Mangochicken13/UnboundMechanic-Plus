@@ -8,7 +8,7 @@ namespace UnboundMechanic
 {
     // These classes have letters at the start of the name so they show in that order in-game
     // Note To Self: If there is a better way to order them, use that instead
-    public class A_UnboundMechanicConfig : ModConfig
+    public class UnboundMechanicConfig : ModConfig
     {
         // This class will be used for vanilla bound NPCs
         public override ConfigScope Mode => ConfigScope.ServerSide;
@@ -143,18 +143,15 @@ namespace UnboundMechanic
         #endregion
     }
 
-    public class B_EveryOtherNPCConfig : ModConfig
+    public class EveryOtherNPCConfig : ModConfig
     {
         // TODO: Revamp this class to be for restrictionless NPC spawning
         public override ConfigScope Mode => ConfigScope.ServerSide;
 
-        #region Restrictionless Spawning
-
-        [Header("Cheats")]
-
         private bool TestEveryoneCan;
         private bool TestRestrictionless;
 
+        [Header("Cheats")]
         public bool EveryoneCanSpawnFromStart
         {
             get { return TestEveryoneCan && TestRestrictionless; }
@@ -189,10 +186,56 @@ namespace UnboundMechanic
             }
         }
 
-        #endregion
-
         #region Specific NPCs
+        [Header("NPCList")]
+        [JsonIgnore]
+        [ShowDespiteJsonIgnore]
+        public bool SampleText;
 
+        public List<NPCDefinition> NPCList = new()
+            {
+                // PreHardmode
+                new NPCDefinition(NPCID.Guide),
+                new NPCDefinition(NPCID.Merchant),
+                new NPCDefinition(NPCID.Nurse),
+                new NPCDefinition(NPCID.Demolitionist),
+                new NPCDefinition(NPCID.DyeTrader),
+                new NPCDefinition(NPCID.Angler),
+                new NPCDefinition(NPCID.BestiaryGirl), // Zoologist internal name
+                new NPCDefinition(NPCID.Dryad),
+                new NPCDefinition(NPCID.Painter),
+                new NPCDefinition(NPCID.Golfer),
+                new NPCDefinition(NPCID.ArmsDealer),
+                new NPCDefinition(NPCID.DD2Bartender), // Tavernkeep
+                new NPCDefinition(NPCID.Stylist),
+                new NPCDefinition(NPCID.GoblinTinkerer),
+                new NPCDefinition(NPCID.WitchDoctor),
+                new NPCDefinition(NPCID.Clothier),
+                new NPCDefinition(NPCID.Mechanic),
+                new NPCDefinition(NPCID.PartyGirl),
+
+                // Hardmode
+                new NPCDefinition(NPCID.Wizard),
+                new NPCDefinition(NPCID.TaxCollector),
+                new NPCDefinition(NPCID.Truffle),
+                new NPCDefinition(NPCID.Pirate),
+                new NPCDefinition(NPCID.Steampunker),
+                new NPCDefinition(NPCID.Cyborg),
+                new NPCDefinition(NPCID.SantaClaus),
+                new NPCDefinition(NPCID.Princess),
+
+                // Town Slimes
+                new NPCDefinition(NPCID.TownSlimeBlue),
+                new NPCDefinition(NPCID.TownSlimeGreen),
+                new NPCDefinition(NPCID.TownSlimeOld),
+                new NPCDefinition(NPCID.TownSlimePurple),
+                new NPCDefinition(NPCID.TownSlimeRainbow),
+                new NPCDefinition(NPCID.TownSlimeRed),
+                new NPCDefinition(NPCID.TownSlimeYellow),
+                new NPCDefinition(NPCID.TownSlimeCopper)
+            };
+
+        /*
         public SpecificNPCsToAllow specificNPCsToAllow = new();
 
         [SeparatePage]
@@ -248,6 +291,7 @@ namespace UnboundMechanic
                 new NPCDefinition(NPCID.TownSlimeCopper)
             };
         }
+        */
 
         #endregion
 

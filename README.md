@@ -1,5 +1,5 @@
 # UnboundMechanic
-This is a Terraria Mod that automatically "unties" bound NPCs in the world.
+This is a Terraria Mod that automatically "unties" bound NPCs in the world. Formally called 
 Specifically the:
 - Mechanic (the reason for making the mod)
 - Stylist
@@ -10,4 +10,5 @@ Specifically the:
 - Wizard
 - Tax Collector
 
-It also has functionality for enabling every NPC to spawn from the start of the game
+It also has functionality for enabling every NPC to spawn from the start of the game, including modded NPCs
+

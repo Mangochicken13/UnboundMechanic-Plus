@@ -1,3 +1,7 @@
-This mod instantly lets the Mechanic spawn in after defeating Skeletron
+This mod (Previously called "Auto Untie Mechanic") lets you automatically free bound town NPCs
 
-Also comes with a config to let her spawn even before Skeletron has been defeated
+It also has functionality for allowing other NPCs to spawn in without their normal restrictions, including modded NPCs
+Be warned though, some modded NPCs are very strong, or may be deprecated, and this mod doesn't account for that.
+
+The mod should work in multiplayer, but if you want to change the NPCs that can spawn regardless of restrictions you will need to re-enter a world if you are already in one (both in single and multiplayer)
+The bound town NPC functionality will work without reloading, just requires up to 60s of waiting time

@@ -1,5 +1,5 @@
 Configs: {
-	A_UnboundMechanicConfig: {
+	UnboundMechanicConfig: {
 		DisplayName: Untying NPCs Config
 
 		Headers: {
@@ -95,15 +95,13 @@ Configs: {
 		}
 	}
 
-	B_EveryOtherNPCConfig: {
+	EveryOtherNPCConfig: {
 		DisplayName: Restrictionless Spawning Config
 
-		specificNPCsToAllow: {
-			Label: specific NPCs To Allow
-			Tooltip: ""
+		Headers: {
+			Cheats: Cheats
+			NPCList: NPC List Header
 		}
-
-		Headers.Cheats: Cheats
 
 		EveryoneCanSpawnFromStart: {
 			Label: Everyone Can Spawn From Start
@@ -118,10 +116,6 @@ Configs: {
 			Label: Allow Restrictionless Spawning
 			Tooltip: ""
 		}
-	}
-
-	SpecificNPCsToAllow: {
-		Tooltip: ""
 
 		SampleText: {
 			Label: "[c/FF0000:IMPORTANT]"
