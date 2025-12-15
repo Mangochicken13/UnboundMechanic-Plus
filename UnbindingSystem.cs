@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using MonoMod.Cil;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -7,22 +9,84 @@ using Terraria.ModLoader.Config;
 
 namespace UnboundMechanic
 {
-    public class UnbindMechanicAfterSkele : GlobalNPC
-    {
-        public override void OnKill(NPC npc)
-        {
-            if (npc.type == NPCID.SkeletronHead)
-            {
-                NPC.savedMech = true;
-            }
-        }
-    }
-
     public class NPCUnlockSystem : ModSystem
     {
+        // Patching the NPC class to prevent santa being killed
+        // while he is in the restrictionless spawns list
+        public override void OnModLoad()
+        {
+            IL_NPC.AI_007_TownEntities += HookPermanentSanta;
+            IL_NPC.UpdateNPC_Inner += HookPermanentSanta;
+            base.OnModLoad();
+        }
+        // [40048 3 - 40048 54]
+        /* AI_OO7_TownEntities
+        IL_02cd: ldarg.0      // this
+        IL_02ce: ldfld        int32 Terraria.NPC::'type'
+        IL_02d3: ldc.i4       142 // 0x0000008e
+        IL_02d8: bne.un.s     IL_0325
+        IL_02da: ldsfld       int32 Terraria.Main::netMode
+        IL_02df: ldc.i4.1
+        IL_02e0: beq.s        IL_0325
+        IL_02e2: ldsfld       bool Terraria.Main::xMas
+        IL_02e7: brtrue.s     IL_0325
+        */
+        
+        // [73662 3 - 73662 111]
+        /* NPC_Update_Inner
+        IL_024e: ldarg.0      // this
+        IL_024f: ldfld        int32 Terraria.NPC::aiStyle
+        IL_0254: ldc.i4.7
+        IL_0255: bne.un.s     IL_02c2
+        IL_0257: ldarg.0      // this
+        IL_0258: ldflda       valuetype [FNA]Microsoft.Xna.Framework.Vector2 Terraria.Entity::position
+        IL_025d: ldfld        float32 [FNA]Microsoft.Xna.Framework.Vector2::Y
+        IL_0262: ldsfld       float32 Terraria.Main::bottomWorld
+        IL_0267: ldc.r4       640
+        IL_026c: sub
+        IL_026d: ldarg.0      // this
+        IL_026e: ldfld        int32 Terraria.Entity::height
+        IL_0273: conv.r4
+        IL_0274: add
+        IL_0275: ble.un.s     IL_02c2
+        IL_0277: ldsfld       int32 Terraria.Main::netMode
+        IL_027c: ldc.i4.1
+        IL_027d: beq.s        IL_02c2
+        IL_027f: ldsfld       bool Terraria.Main::xMas
+        IL_0284: brtrue.s     IL_02c2
+        */
+        private static void HookPermanentSanta(ILContext il)
+        {
+            try
+            {
+                ILCursor c = new ILCursor(il);
+
+                // Should hit the first instance where the xMas bool is checked.
+                c.GotoNext(i => i.MatchLdsfld(typeof(bool), nameof(Terraria.Main.xMas)));
+
+                // Right after the xMas bool is added to the stack
+                c.Index++;
+
+                // If santa spawning is enabled, return a value of true to stop him being killed
+                c.EmitDelegate<Func<bool, bool>>((returnValue) =>
+                {
+                    return false;
+                    if (ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning) //&& TownNPCS.Exists(npc => npc.type == NPCID.SantaClaus))
+                    {
+                        return true;
+                    }
+                    return returnValue;
+                });
+            }
+            catch (Exception e)
+            {
+                MonoModHooks.DumpIL(ModContent.GetInstance<UnboundMechanic>(), il);
+            }
+        }
+
         public int timer;
 
-        public List<NPC> TownNPCS = new();
+        public static List<NPC> TownNPCS = new();
 
         public override void OnWorldLoad()
         {
@@ -81,8 +145,8 @@ namespace UnboundMechanic
             #endregion
 
             timer++;
-            // This check happens every 60s, purely to save resources
-            if (timer >= 3600)
+            // This check happens every 20s, purely to save resources
+            if (timer >= 1200)
             {
                 timer = 0;
 
