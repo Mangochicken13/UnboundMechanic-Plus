@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using MonoMod.Cil;
 using Terraria;
 using Terraria.ID;
@@ -13,67 +12,34 @@ namespace UnboundMechanic
     {
         // Patching the NPC class to prevent santa being killed
         // while he is in the restrictionless spawns list
-        public override void OnModLoad()
-        {
+        public override void Load() {
             IL_NPC.AI_007_TownEntities += HookPermanentSanta;
-            IL_NPC.UpdateNPC_Inner += HookPermanentSanta;
-            base.OnModLoad();
+            On_WorldGen.CheckSpecialTownNPCSpawningConditions += On_CheckSpecialTownNPCSpawningConditions;
+            //IL_NPC.UpdateNPC_Inner += HookPermanentSanta;
+            base.Load();
         }
-        // [40048 3 - 40048 54]
-        /* AI_OO7_TownEntities
-        IL_02cd: ldarg.0      // this
-        IL_02ce: ldfld        int32 Terraria.NPC::'type'
-        IL_02d3: ldc.i4       142 // 0x0000008e
-        IL_02d8: bne.un.s     IL_0325
-        IL_02da: ldsfld       int32 Terraria.Main::netMode
-        IL_02df: ldc.i4.1
-        IL_02e0: beq.s        IL_0325
-        IL_02e2: ldsfld       bool Terraria.Main::xMas
-        IL_02e7: brtrue.s     IL_0325
-        */
-        
-        // [73662 3 - 73662 111]
-        /* NPC_Update_Inner
-        IL_024e: ldarg.0      // this
-        IL_024f: ldfld        int32 Terraria.NPC::aiStyle
-        IL_0254: ldc.i4.7
-        IL_0255: bne.un.s     IL_02c2
-        IL_0257: ldarg.0      // this
-        IL_0258: ldflda       valuetype [FNA]Microsoft.Xna.Framework.Vector2 Terraria.Entity::position
-        IL_025d: ldfld        float32 [FNA]Microsoft.Xna.Framework.Vector2::Y
-        IL_0262: ldsfld       float32 Terraria.Main::bottomWorld
-        IL_0267: ldc.r4       640
-        IL_026c: sub
-        IL_026d: ldarg.0      // this
-        IL_026e: ldfld        int32 Terraria.Entity::height
-        IL_0273: conv.r4
-        IL_0274: add
-        IL_0275: ble.un.s     IL_02c2
-        IL_0277: ldsfld       int32 Terraria.Main::netMode
-        IL_027c: ldc.i4.1
-        IL_027d: beq.s        IL_02c2
-        IL_027f: ldsfld       bool Terraria.Main::xMas
-        IL_0284: brtrue.s     IL_02c2
-        */
+
         private static void HookPermanentSanta(ILContext il)
         {
             try
             {
                 ILCursor c = new ILCursor(il);
+                
+                // NPCID.SantaClaus
+                c.GotoNext(i => i.MatchLdcI4(142)); 
 
-                // Should hit the first instance where the xMas bool is checked.
-                c.GotoNext(i => i.MatchLdsfld(typeof(bool), nameof(Terraria.Main.xMas)));
-
-                // Right after the xMas bool is added to the stack
                 c.Index++;
+                //c.Emit(Mono.Cecil.Cil.OpCodes.Pop);
+                //c.Emit(Mono.Cecil.Cil.OpCodes.Ldc_I4_0);
 
                 // If santa spawning is enabled, return a value of true to stop him being killed
-                c.EmitDelegate<Func<bool, bool>>((returnValue) =>
+                c.EmitDelegate<Func<int, int>>((returnValue) =>
                 {
-                    return false;
-                    if (ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning) //&& TownNPCS.Exists(npc => npc.type == NPCID.SantaClaus))
+                    //ModContent.GetInstance<UnboundMechanic>().Logger.Info("Delegate Reached");
+                    //return 1;
+                    if (ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning && TownNPCS.Exists(npc => npc.type == NPCID.SantaClaus))
                     {
-                        return true;
+                        return 1;
                     }
                     return returnValue;
                 });
@@ -81,12 +47,19 @@ namespace UnboundMechanic
             catch (Exception e)
             {
                 MonoModHooks.DumpIL(ModContent.GetInstance<UnboundMechanic>(), il);
+                throw new ILPatchFailureException(ModContent.GetInstance<UnboundMechanic>(), il, e);
             }
         }
 
+        private bool On_CheckSpecialTownNPCSpawningConditions(On_WorldGen.orig_CheckSpecialTownNPCSpawningConditions orig, int type) {
+            bool canSpawn = orig(type);
+            if (type == NPCID.Truffle && TownNPCS.Exists(npc => npc.type == NPCID.Truffle)) return true;
+            return canSpawn;
+        }
+        
         public int timer;
 
-        public static List<NPC> TownNPCS = new();
+        private static List<NPC> TownNPCS = new();
 
         public override void OnWorldLoad()
         {
@@ -96,15 +69,15 @@ namespace UnboundMechanic
             {
                 foreach (NPC npc in ContentSamples.NpcsByNetId.Values)
                 {
-                    if (npc.townNPC && NPC.TypeToDefaultHeadIndex(npc.type) >= 0)
-                    {
-                        TownNPCS.Add(npc);
-                    }
+                    if (npc.type == NPCID.TravellingMerchant)
+                        continue;
+                    if (npc.townNPC && NPC.TypeToDefaultHeadIndex(npc.type) >= 0 && !TownNPCS.Contains(npc)) { TownNPCS.Add(npc); }
                 }
             }
 
             // This part is for if EveryoneCanSpawnFromStart is false, and prunes NPCs not present in the config from the list to enable to spawn
-            if (!ModContent.GetInstance<EveryOtherNPCConfig>().EveryoneCanSpawnFromStart && ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning)
+            if (!ModContent.GetInstance<EveryOtherNPCConfig>().EveryoneCanSpawnFromStart && 
+                ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning)
             {
                 List<int> types = new();
                 List<NPC> townNPCsTemp = new();
@@ -138,15 +111,21 @@ namespace UnboundMechanic
             {
                 foreach (NPC npc in TownNPCS)
                 {
-                    // TODO: Double check that this isn't an intensive operation
                     Main.townNPCCanSpawn[npc.type] = true;
+                    
+                    // Extra logic to unlock specific NPCs
+                    switch (npc.type) {
+                        case NPCID.Truffle:
+                            if (!NPC.unlockedTruffleSpawn) { NPC.unlockedTruffleSpawn = true; }
+                            break;
+                    }
+                        
                 }
             }
             #endregion
 
             timer++;
-            // This check happens every 20s, purely to save resources
-            if (timer >= 1200)
+            if (timer >= 120)
             {
                 timer = 0;
 
