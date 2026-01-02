@@ -1,6 +1,6 @@
 Configs: {
-	UnboundMechanicConfig: {
-		DisplayName: Untying NPCs Config
+	BoundNPCConfig: {
+		DisplayName: Bound NPC Config
 
 		Headers: {
 			Presets: Presets
@@ -12,6 +12,7 @@ Configs: {
 			Mechanic: "[c/FCC095:Mechanic]"
 			Wizard: "[c/6228EB:Wizard]"
 			TaxCollector: "[c/FF6D59:Tax Collector]"
+			Truffle: Truffle Header
 		}
 
 		None: {
@@ -79,8 +80,8 @@ Configs: {
 			Tooltip: ""
 		}
 
-		WizardAlwaysAvailablePreHardmode: {
-			Label: Wizard Always Available Pre Hardmode
+		WizardAlwaysAvailable: {
+			Label: Wizard Always Available
 			Tooltip: ""
 		}
 
@@ -89,13 +90,23 @@ Configs: {
 			Tooltip: ""
 		}
 
-		TaxCollectorAlwaysAvailablePreHardmode: {
-			Label: Tax Collector Always Available Pre Hardmode
+		TaxCollectorAlwaysAvailable: {
+			Label: Tax Collector Always Available
+			Tooltip: ""
+		}
+
+		TruffleDoesntRequireSurfaceMushroom: {
+			Label: Truffle Doesnt Require Surface Mushroom
+			Tooltip: ""
+		}
+
+		TruffleAvailablePreHardmode: {
+			Label: Truffle Available Pre Hardmode
 			Tooltip: ""
 		}
 	}
 
-	EveryOtherNPCConfig: {
+	RestrictionlessSpawningConfig: {
 		DisplayName: Restrictionless Spawning Config
 
 		Headers: {
@@ -129,6 +140,11 @@ Configs: {
 		NPCList: {
 			Label: NPC List
 			Tooltip: ""
+		}
+
+		AllowMultipleTravellingMerchantSpawns: {
+			Tooltip: ""
+			Label: Allow Multiple Travelling Merchant Spawns
 		}
 	}
 }

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
+using MonoMod.RuntimeDetour.HookGen;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -10,9 +13,16 @@ namespace UnboundMechanic
 {
     public class TownNPCSpawnSystem : ModSystem
     {
+        private Hook my_Hook;
+        private delegate bool orig_CanTownNPCSpawn(ModNPC self, int numTownNPCs);
         public override void Load() {
             IL_NPC.AI_007_TownEntities += HookPermanentSanta;
             On_WorldGen.CheckSpecialTownNPCSpawningConditions += On_CheckSpecialTownNPCSpawningConditions;
+            //On_WorldGen.TownNPC
+
+            MethodInfo detourMethod = typeof(ModNPC).GetMethod("CanTownNPCSpawn", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MonoModHooks.Add(detourMethod, On_CanTownNPCSpawn);
+            
             base.Load();
         }
 
@@ -24,9 +34,9 @@ namespace UnboundMechanic
 
                 c.Index++;
 
-                // If santa spawning is enabled, return a value of true (1) to stop him being killed
+                // If santa spawning is enabled, return a true value (1) to stop him being killed
                 c.EmitDelegate<Func<int, int>>((returnValue) => {
-                    if (ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning &&
+                    if (ModContent.GetInstance<RestrictionlessSpawningConfig>().AllowRestrictionlessSpawning &&
                         SpawnableTownNPCS.Exists(npc => npc.type == NPCID.SantaClaus))
                         return 1;
 
@@ -47,6 +57,12 @@ namespace UnboundMechanic
             return canSpawn;
         }
 
+        private bool On_CanTownNPCSpawn(orig_CanTownNPCSpawn orig, ModNPC self, int numTownNPCs) {
+            if (SpawnableTownNPCS.Exists(npc => npc.type == self.Type))
+                return true;
+            return orig(self, numTownNPCs);
+        }
+
         public int timer;
 
         // TODO: Update this list on config change, not just world load
@@ -54,50 +70,58 @@ namespace UnboundMechanic
         public static List<NPC> SpawnableTownNPCS = new();
 
         public override void OnWorldLoad() {
-            var otherNPCConfig = ModContent.GetInstance<EveryOtherNPCConfig>();
+            var restrictionlessConfig = ModContent.GetInstance<RestrictionlessSpawningConfig>();
             
             // Add all town NPCs to a reference list, skip Travelling Merchant
             // TODO: Check that skeleton merchant dosen't do the same multiple spawning thing on secret seeds
-            if (otherNPCConfig.AllowRestrictionlessSpawning) {
+            if (restrictionlessConfig.AllowRestrictionlessSpawning) {
                 foreach (NPC npc in ContentSamples.NpcsByNetId.Values) {
-                    if (npc.type == NPCID.TravellingMerchant)
-                        continue;
                     if (npc.townNPC && NPC.TypeToDefaultHeadIndex(npc.type) >= 0)
                         AllTownNPCS.Add(npc);
                 }
             }
 
-            if (!otherNPCConfig.EveryoneCanSpawnFromStart && otherNPCConfig.AllowRestrictionlessSpawning)
-            {
-                UpdateSpawnableTownNPCs();
-            }
+            UpdateSpawnableTownNPCs();
         }
 
         // Prune unloaded/disabled NPCs from the reference list
-        public void UpdateSpawnableTownNPCs() {
-            List<int> types = new();
-            List<NPC> townNPCsTemp = new();
+        public void UpdateSpawnableTownNPCs(bool allEnabled = false) {
+            if (allEnabled) {
+                SpawnableTownNPCS = AllTownNPCS;
+                return;
+            }
+            
+            List<int> validNPCTypes = new();
+            List<NPC> spawnableTownNPCs = new();
 
-            foreach (NPCDefinition npcDef in ModContent.GetInstance<EveryOtherNPCConfig>().NPCList) {
+            var restrictionlessConfig = ModContent.GetInstance<RestrictionlessSpawningConfig>();
+            
+            foreach (NPCDefinition npcDef in restrictionlessConfig.NPCList) {
                 if (!npcDef.IsUnloaded)
-                    types.Add(npcDef.Type);
+                    validNPCTypes.Add(npcDef.Type);
             }
-
             foreach (NPC npc in AllTownNPCS) {
-                if (types.Contains(npc.type))
-                    townNPCsTemp.Add(npc);
+                if (npc.type == NPCID.TravellingMerchant &&
+                    !restrictionlessConfig.AllowMultipleTravellingMerchantSpawns) {
+                    continue;
+                }
+
+                if (validNPCTypes.Contains(npc.type))
+                    spawnableTownNPCs.Add(npc);
             }
-            SpawnableTownNPCS = townNPCsTemp;
+            SpawnableTownNPCS = spawnableTownNPCs;
         }
 
         public override void PostUpdateNPCs()
         {
+            //return;
+            
             // Hopefully avoid breaking census for multiplayer clients?
             // Maybe check for the mod on the server?
             if (Main.netMode == NetmodeID.MultiplayerClient)
                 return;
             
-            if (ModContent.GetInstance<EveryOtherNPCConfig>().AllowRestrictionlessSpawning) {
+            if (ModContent.GetInstance<RestrictionlessSpawningConfig>().AllowRestrictionlessSpawning) {
                 foreach (NPC npc in SpawnableTownNPCS) {
                     Main.townNPCCanSpawn[npc.type] = true;
                 }
@@ -115,78 +139,75 @@ namespace UnboundMechanic
                 // NPC.unlocked[name]spawn for non "trapped" NPCs
 
                 if (config.EnableAngler)
-                    AnglerCheck();
+                    TryEnableAngler();
 
                 if (config.EnableStylist)
-                    StylistCheck();
+                    TryEnableStylist();
 
                 if (config.EnableGolfer)
-                    GolferCheck();
+                    TryEnableGolfer();
 
                 if (config.EnableGoblin)
-                    GoblinCheck();
+                    TryEnableGoblin();
 
                 if (config.EnableTavernkeep)
-                    TavernkeepCheck();
+                    TryEnableTavernkeep();
 
                 if (config.EnableMechanic)
-                    MechanicCheck();
+                    TryEnableMechanic();
 
                 if (config.EnableWizard)
-                    WizardCheck();
+                    TryEnableWizard();
 
                 if (config.EnableTaxCollector)
-                    TaxCollectorCheck();
+                    TryEnableTaxCollector();
             }
         }
 
         #region Specific NPC Checks
-        public static void AnglerCheck()
-        {
+        public static void TryEnableAngler() {
             if (!NPC.savedAngler)
                 NPC.savedAngler = true;
         }
 
-        public static void StylistCheck()
-        {
+        public static void TryEnableStylist() {
             if (!NPC.savedStylist)
                 NPC.savedStylist = true;
         }
 
-        public static void GolferCheck()
-        {
+        public static void TryEnableGolfer() {
             if (!NPC.savedGolfer)
                 NPC.savedGolfer = true;
         }
 
-        public static void GoblinCheck()
-        {
-            if (!NPC.savedGoblin && (NPC.downedGoblins || ModContent.GetInstance<BoundNPCConfig>().GoblinAlwaysAvailable))
+        public static void TryEnableGoblin() {
+            if (!NPC.savedGoblin &&
+                (NPC.downedGoblins || ModContent.GetInstance<BoundNPCConfig>().GoblinAlwaysAvailable))
                 NPC.savedGoblin = true;
         }
 
-        public static void TavernkeepCheck()
-        {
-            if (!NPC.savedBartender && (NPC.downedBoss2 || ModContent.GetInstance<BoundNPCConfig>().TavernkeepAlwaysAvailable))
+        public static void TryEnableTavernkeep() {
+            if (!NPC.savedBartender &&
+                (NPC.downedBoss2 || ModContent.GetInstance<BoundNPCConfig>().TavernkeepAlwaysAvailable))
                 NPC.savedBartender = true;
         }
 
-        public static void MechanicCheck()
-        {
-            if (!NPC.savedMech && (NPC.downedBoss3 || ModContent.GetInstance<BoundNPCConfig>().MechanicAlwaysAvailable))
+        public static void TryEnableMechanic() {
+            if (!NPC.savedMech &&
+                (NPC.downedBoss3 || ModContent.GetInstance<BoundNPCConfig>().MechanicAlwaysAvailable))
                 NPC.savedMech = true;
         }
 
-        public static void WizardCheck()
-        {
-            if (!NPC.savedWizard && (Main.hardMode || ModContent.GetInstance<BoundNPCConfig>().WizardAlwaysAvailable))
+        public static void TryEnableWizard() {
+            if (!NPC.savedWizard &&
+                (Main.hardMode || ModContent.GetInstance<BoundNPCConfig>().WizardAlwaysAvailable))
                 NPC.savedWizard = true;
 
         }
 
-        public static void TaxCollectorCheck()
-        {
-            if (!NPC.savedTaxCollector && (Main.hardMode || ModContent.GetInstance<BoundNPCConfig>().TaxCollectorAlwaysAvailable))
+        public static void TryEnableTaxCollector() {
+            if (!NPC.savedTaxCollector &&
+                (Main.hardMode || ModContent.GetInstance<BoundNPCConfig>().TaxCollectorAlwaysAvailable))
                 NPC.savedTaxCollector = true;
         }
         #endregion
